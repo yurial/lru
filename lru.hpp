@@ -25,8 +25,8 @@ using allocator_type = Allocator;
 
 using data_allocator_type = typename std::allocator_traits<allocator_type>::template rebind_alloc<value_type>;
 using data_container = std::list<value_type, data_allocator_type>;
-using reference = mapped_type&;
-using const_reference = const reference;
+using reference = value_type&;
+using const_reference = const value_type&;
 using pointer = typename std::allocator_traits<allocator_type>::template rebind_alloc<mapped_type>::pointer;
 using const_pointer = typename std::allocator_traits<allocator_type>::template rebind_alloc<mapped_type>::const_pointer;
 using iterator = typename data_container::iterator;
@@ -73,21 +73,21 @@ inline  void        bump_front(const iterator it) noexcept;
 inline  void        bump_back(const iterator it) noexcept;
 
 template<class K>
-inline  reference operator[](const K& key);
+inline  mapped_type&        operator[](const K& key);
 template<class K>
-inline  reference operator[](K&& key);
+inline  const mapped_type&  operator[](K&& key);
 template<class K>
-inline  size_type count(const K& key) const noexcept;
+inline  size_type           count(const K& key) const noexcept;
 template<class K>
-inline  iterator  find(const K& key) noexcept;
+inline  iterator            find(const K& key) noexcept;
 template<class K>
-inline  const_iterator find(const K& key) const noexcept;
+inline  const_iterator      find(const K& key) const noexcept;
 template<class K>
-inline  bool      contains(const K& key) const noexcept;
+inline  bool                contains(const K& key) const noexcept;
 template<class K>
-inline  reference       at(const K& key);
+inline  mapped_type&        at(const K& key);
 template<class K>
-inline  const_reference at(const K& key) const;
+inline  const mapped_type&  at(const K& key) const;
 
 inline  reference       front() noexcept;
 inline  const_reference front() const noexcept;
@@ -100,6 +100,8 @@ inline  const_iterator  begin() const noexcept;
 inline  const_iterator  end() const noexcept;
 inline  const_iterator  cbegin() const noexcept;
 inline  const_iterator  cend() const noexcept;
+
+inline  void            max_load_factor(const float count);
 
 protected:
 data_container  m_data;
@@ -261,8 +263,10 @@ typename LRU<Key,T,Hash,KeyEqual,Allocator>::size_type LRU<Key,T,Hash,KeyEqual,A
     const auto index_it = m_index.find(key);
     if (index_it == m_index.end())
         return 0;
-    m_data.erase(index_it->second);
-    return m_index.erase(index_it);
+    const auto data_it = index_it->second;
+    m_index.erase(index_it);
+    m_data.erase(data_it);
+    return 1;
     }
 
 template<class Key, class T, class Hash, class KeyEqual, class Allocator>
@@ -307,21 +311,21 @@ void LRU<Key,T,Hash,KeyEqual,Allocator>::bump_back(const iterator it) noexcept
 
 template<class Key, class T, class Hash, class KeyEqual, class Allocator>
 template<class K>
-typename LRU<Key,T,Hash,KeyEqual,Allocator>::reference LRU<Key,T,Hash,KeyEqual,Allocator>::at(const K& key)
+typename LRU<Key,T,Hash,KeyEqual,Allocator>::mapped_type& LRU<Key,T,Hash,KeyEqual,Allocator>::at(const K& key)
     {
     return m_index.at(key)->second;
     }
 
 template<class Key, class T, class Hash, class KeyEqual, class Allocator>
 template<class K>
-typename LRU<Key,T,Hash,KeyEqual,Allocator>::const_reference LRU<Key,T,Hash,KeyEqual,Allocator>::at(const K& key) const
+const typename LRU<Key,T,Hash,KeyEqual,Allocator>::mapped_type& LRU<Key,T,Hash,KeyEqual,Allocator>::at(const K& key) const
     {
     return m_index.at(key)->second;
     }
 
 template<class Key, class T, class Hash, class KeyEqual, class Allocator>
 template<class K>
-typename LRU<Key,T,Hash,KeyEqual,Allocator>::reference LRU<Key,T,Hash,KeyEqual,Allocator>::operator[](const K& key)
+typename LRU<Key,T,Hash,KeyEqual,Allocator>::mapped_type& LRU<Key,T,Hash,KeyEqual,Allocator>::operator[](const K& key)
     {
     const auto index_it = m_index.find(key);
     if (index_it != m_index.end())
@@ -331,7 +335,7 @@ typename LRU<Key,T,Hash,KeyEqual,Allocator>::reference LRU<Key,T,Hash,KeyEqual,A
 
 template<class Key, class T, class Hash, class KeyEqual, class Allocator>
 template<class K>
-typename LRU<Key,T,Hash,KeyEqual,Allocator>::reference LRU<Key,T,Hash,KeyEqual,Allocator>::operator[](K&& key)
+const typename LRU<Key,T,Hash,KeyEqual,Allocator>::mapped_type& LRU<Key,T,Hash,KeyEqual,Allocator>::operator[](K&& key)
     {
     const auto index_it = m_index.find(key);
     if (index_it != m_index.end())
@@ -429,3 +433,8 @@ typename LRU<Key,T,Hash,KeyEqual,Allocator>::const_iterator LRU<Key,T,Hash,KeyEq
     return m_data.cend();
     }
 
+template<class Key, class T, class Hash, class KeyEqual, class Allocator>
+void LRU<Key,T,Hash,KeyEqual,Allocator>::max_load_factor(const float count)
+    {
+    m_index.max_load_factor(count);
+    }
