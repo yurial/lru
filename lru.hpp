@@ -32,8 +32,9 @@ using const_pointer = typename std::allocator_traits<allocator_type>::template r
 using iterator = typename data_container::iterator;
 using const_iterator = typename data_container::const_iterator;
 
-using index_allocator_type = typename std::allocator_traits<allocator_type>::template rebind_alloc<std::pair<const key_type, const iterator>>;
-using index_container = std::unordered_map<const key_type, const iterator, hasher, key_equal, index_allocator_type>;
+using key_wrapper_type = const std::reference_wrapper<const key_type>;
+using index_allocator_type = typename std::allocator_traits<allocator_type>::template rebind_alloc<std::pair<key_wrapper_type, const iterator>>;
+using index_container = std::unordered_map<key_wrapper_type, const iterator, hasher, key_equal, index_allocator_type>;
 
                         LRU() = default;
 inline  explicit        LRU(const allocator_type& alloc);
